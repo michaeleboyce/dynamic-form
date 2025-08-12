@@ -142,7 +142,7 @@ export default function DynamicStep() {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                     <div>
                       <span className="font-medium">Monthly Rent:</span>
-                      <span className="ml-1">${'{'}coreOverview.housing.monthlyRent{'}'}</span>
+                      <span className="ml-1">{'$'}{coreOverview.housing.monthlyRent}</span>
                     </div>
                     <div>
                       <span className="font-medium">Months Behind:</span>
@@ -150,7 +150,7 @@ export default function DynamicStep() {
                     </div>
                     <div>
                       <span className="font-medium">Total Owed:</span>
-                      <span className="ml-1">${'{'}(coreOverview.housing.monthlyRent || 0) * (coreOverview.housing.monthsBehind || 0){'}'}</span>
+                      <span className="ml-1">{'$'}{(coreOverview.housing.monthlyRent || 0) * (coreOverview.housing.monthsBehind || 0)}</span>
                     </div>
                   </div>
                   {(coreOverview.housing.landlordName || coreOverview.housing.landlordPhone) && (

@@ -22,23 +22,29 @@ export default function DynamicFormRenderer({
   // Watch all form values for conditional rendering
   const watchedValues = useWatch({ control });
 
-  // Check if a field should be shown based on showIf conditions
+  // Check if a field should be shown based on showIf or visibleWhen conditions
   const shouldShowField = (field: any) => {
-    if (!field.showIf) return true;
+    // Support both showIf and visibleWhen
+    const condition = field.showIf || field.visibleWhen;
+    if (!condition) return true;
     
-    const { showIf } = field;
-    const dependentValue = watchedValues[showIf.field];
+    const dependentValue = watchedValues[condition.field];
     
-    if (showIf.equals !== undefined) {
-      return dependentValue === showIf.equals;
+    if (condition.equals !== undefined) {
+      return dependentValue === condition.equals;
     }
     
-    if (showIf.anyOf) {
-      return showIf.anyOf.includes(dependentValue);
+    if (condition.anyOf) {
+      return condition.anyOf.includes(dependentValue);
     }
     
-    if (showIf.minSelected !== undefined && Array.isArray(dependentValue)) {
-      return dependentValue.length >= showIf.minSelected;
+    if (condition.minSelected !== undefined && Array.isArray(dependentValue)) {
+      return dependentValue.length >= condition.minSelected;
+    }
+    
+    // Support anySelected for checking if any items are selected
+    if (condition.anySelected && Array.isArray(dependentValue)) {
+      return dependentValue.length > 0;
     }
     
     return true;
@@ -51,7 +57,7 @@ export default function DynamicFormRenderer({
     for (const [key, value] of Object.entries(data)) {
       // Check if this is a multiselect field
       const field = spec.fields.find(f => f.id === key);
-      if (field && (field.type === 'multiselect' || field.type === 'checkbox-group')) {
+      if (field && (field.type === 'multiselect' || field.type === 'multi_select' || field.type === 'checkbox-group')) {
         // Convert checkbox object to array of selected values
         const selected = [];
         if (typeof value === 'object' && value !== null) {
@@ -78,7 +84,16 @@ export default function DynamicFormRenderer({
       {spec.fields.map((field) => {
         if (!shouldShowField(field)) return null;
 
-        switch (field.type) {
+        // Normalize field types from AI variations
+        let fieldType = field.type;
+        if (fieldType === 'single_select') fieldType = 'select';
+        if (fieldType === 'multi_select') fieldType = 'multiselect';
+        
+        // Get currency symbol - support both currency and currencyCode
+        const currencySymbol = field.currency === "USD" || field.currencyCode === "USD" ? "$" : 
+                              field.currency || field.currencyCode || "$";
+
+        switch (fieldType) {
           case "text":
             return (
               <div key={field.id} className="space-y-1">
@@ -108,18 +123,40 @@ export default function DynamicFormRenderer({
                 {field.helpText && (
                   <p className="text-sm text-gray-600">{field.helpText}</p>
                 )}
-                <input
-                  className="w-full rounded border p-2"
-                  {...register(field.id, { 
-                    required: field.required,
-                    min: field.min || field.validations?.min,
-                    max: field.max || field.validations?.max,
-                  })}
-                  type="number"
-                  placeholder={field.placeholder}
-                  min={field.min || field.validations?.min}
-                  max={field.max || field.validations?.max}
-                />
+                {field.prefix ? (
+                  <div className="relative">
+                    <span className="absolute left-2 top-2 text-gray-500">
+                      {field.prefix}
+                    </span>
+                    <input
+                      className="w-full rounded border p-2 pl-7"
+                      {...register(field.id, { 
+                        required: field.required,
+                        min: field.min || field.validations?.min,
+                        max: field.max || field.validations?.max,
+                      })}
+                      type="number"
+                      placeholder={field.placeholder}
+                      min={field.min || field.validations?.min}
+                      max={field.max || field.validations?.max}
+                      step={field.step}
+                    />
+                  </div>
+                ) : (
+                  <input
+                    className="w-full rounded border p-2"
+                    {...register(field.id, { 
+                      required: field.required,
+                      min: field.min || field.validations?.min,
+                      max: field.max || field.validations?.max,
+                    })}
+                    type="number"
+                    placeholder={field.placeholder}
+                    min={field.min || field.validations?.min}
+                    max={field.max || field.validations?.max}
+                    step={field.step}
+                  />
+                )}
               </div>
             );
 
@@ -135,7 +172,7 @@ export default function DynamicFormRenderer({
                 )}
                 <div className="relative">
                   <span className="absolute left-2 top-2 text-gray-500">
-                    {field.currency === "USD" ? "$" : field.currency || "$"}
+                    {currencySymbol}
                   </span>
                   <input
                     className="w-full rounded border p-2 pl-7"

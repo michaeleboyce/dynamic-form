@@ -39,9 +39,10 @@ export type Core = z.infer<typeof CoreZ>;
 
 // Flexible validation schema that accepts various field formats
 export const DynamicSpecZ = z.object({
+  id: z.string().optional(), // Allow "id" field as alternative to formId
   formId: z.string().optional(), // Optional formId field
   title: z.string(),
-  version: z.string(),
+  version: z.string().optional().default("1.0"), // Make version optional with default
   rationale: z.string().optional(),
   warnings: z.array(z.string()).optional(),
   fields: z.array(z.object({
@@ -49,13 +50,18 @@ export const DynamicSpecZ = z.object({
     type: z.enum([
       "text", "textarea", "number", "boolean", "date", "currency",
       "select", "radio", "checkbox-group",
-      "multiselect" // Adding multiselect support
+      "multiselect", // Adding multiselect support
+      "single_select", // AI sometimes uses this
+      "multi_select" // AI sometimes uses this
     ]),
     label: z.string(),
     helpText: z.string().optional(),
     required: z.boolean().optional(),
     placeholder: z.string().optional(),
     currency: z.string().optional(), // For currency fields
+    currencyCode: z.string().optional(), // AI sometimes uses this
+    prefix: z.string().optional(), // Alternative to currency for prefix display
+    step: z.number().optional(), // Step value for number inputs
     min: z.number().optional(), // Direct min/max on field
     max: z.number().optional(),
     minSelected: z.number().optional(), // For multiselect
@@ -71,12 +77,21 @@ export const DynamicSpecZ = z.object({
       max: z.number().optional(),
       pattern: z.string().optional(),
     }).optional(),
+    // Support both showIf and visibleWhen
     showIf: z.object({
       field: z.string(),
       equals: z.any().optional(),
       anyOf: z.array(z.string()).optional(),
       minSelected: z.number().optional(),
-    }).optional(), // Conditional display support
+      anySelected: z.boolean().optional(), // AI sometimes uses this
+    }).optional(),
+    visibleWhen: z.object({
+      field: z.string(),
+      equals: z.any().optional(),
+      anyOf: z.array(z.string()).optional(),
+      minSelected: z.number().optional(),
+      anySelected: z.boolean().optional(), // AI sometimes uses this
+    }).optional(), // AI sometimes uses visibleWhen instead of showIf
   })),
 });
 

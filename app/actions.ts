@@ -15,7 +15,28 @@ export async function generateDynamicSpec(
   prompt: string,
   maxFields = 8
 ): Promise<{ raw: unknown; spec: DynamicFormSpec | null; debug?: { request: unknown; response: unknown; content: string } }> {
-  const system = `Return ONLY JSON matching DynamicFormSpec. No file uploads. Prefer structured fields. Max ${maxFields} fields. Avoid PII (SSN, bank). 8th-grade reading level.`;
+  const system = `Return ONLY JSON matching this exact structure:
+{
+  "title": "string",
+  "fields": [
+    {
+      "id": "string (unique identifier)",
+      "type": "select|multiselect|text|number|boolean|date|currency|textarea|radio|checkbox-group",
+      "label": "string (question text)",
+      "required": boolean,
+      "helpText": "optional string",
+      "options": [{"value": "string", "label": "string"}] // for select/multiselect/radio/checkbox-group types
+    }
+  ]
+}
+
+Rules:
+- Max ${maxFields} fields
+- Use "select" for single choice, "multiselect" for multiple choice
+- Include "options" array for select/multiselect/radio/checkbox-group
+- Avoid PII (SSN, bank info)
+- 8th-grade reading level
+- No file uploads`;
   const user = prompt ?? `You are assisting a rental assistance screener. Propose up to ${maxFields} targeted follow-ups that affect eligibility or award amount. Prefer structured fields. Avoid duplicates.`;
   const context = JSON.stringify({ core: coreData });
 
@@ -60,7 +81,6 @@ async function callModelReturningJson({
   console.log("[AI REQUEST] /generateDynamicSpec", {
     model: requestPayload.model,
     response_format: requestPayload.response_format,
-    max_completion_tokens: requestPayload.max_completion_tokens,
     systemPreview: system.slice(0, 160),
     userPreview: user.slice(0, 160),
     contextPreview: context.slice(0, 200),
