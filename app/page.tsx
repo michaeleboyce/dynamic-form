@@ -1,103 +1,108 @@
-import Image from "next/image";
+import Link from "next/link";
 
 export default function Home() {
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
+      <div className="max-w-4xl mx-auto px-4 py-16">
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">
+            Emergency Rental Assistance
+          </h1>
+          <p className="text-xl text-gray-600">
+            AI-Powered Dynamic Forms Demo
+          </p>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+
+        <div className="bg-white rounded-lg shadow-lg p-8 mb-8">
+          <h2 className="text-2xl font-semibold mb-4">Welcome to the ERA Application Portal</h2>
+          <p className="text-gray-700 mb-6">
+            This demonstration showcases an innovative approach to government benefit applications 
+            using AI-generated dynamic questions that adapt based on your specific situation.
+          </p>
+          
+          <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
+            <p className="text-sm text-blue-900">
+              <strong>Demo Notice:</strong> This is a demonstration environment. Do not enter real 
+              personal information. The AI will generate follow-up questions based on your responses 
+              to help determine eligibility and required documentation.
+            </p>
+          </div>
+
+          <div className="space-y-4 mb-8">
+            <h3 className="text-lg font-semibold">How It Works:</h3>
+            <ol className="list-decimal list-inside space-y-2 text-gray-700">
+              <li>Complete basic application sections (Applicant, Housing, Household, Eligibility)</li>
+              <li>Review your core application data</li>
+              <li>AI generates targeted follow-up questions based on your situation</li>
+              <li>You can edit the AI prompt to customize question generation</li>
+              <li>Answer dynamic questions and view complete JSON output</li>
+              <li>Submit your completed application</li>
+            </ol>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-4 mb-8">
+            <div className="border rounded-lg p-4">
+              <h4 className="font-semibold mb-2">✨ Key Features</h4>
+              <ul className="text-sm text-gray-600 space-y-1">
+                <li>• Editable AI prompts</li>
+                <li>• Real-time question generation</li>
+                <li>• JSON schema validation</li>
+                <li>• Complete data export</li>
+                <li>• Session persistence</li>
+              </ul>
+            </div>
+            <div className="border rounded-lg p-4">
+              <h4 className="font-semibold mb-2">🛡️ Privacy & Security</h4>
+              <ul className="text-sm text-gray-600 space-y-1">
+                <li>• PII filtering built-in</li>
+                <li>• No SSN/bank info collection</li>
+                <li>• Cookie-based sessions</li>
+                <li>• Secure data storage</li>
+                <li>• Demo mode protection</li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="flex gap-4 justify-center">
+            <Link
+              href="/apply"
+              className="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition"
+            >
+              Start Application
+            </Link>
+            <a
+              href="https://github.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="border border-gray-300 px-8 py-3 rounded-lg font-semibold hover:bg-gray-50 transition"
+            >
+              View on GitHub
+            </a>
+          </div>
+        </div>
+
+        <div className="bg-gray-50 rounded-lg p-6">
+          <h3 className="font-semibold mb-3">Technical Stack</h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+            <div>
+              <strong className="block text-gray-900">Frontend</strong>
+              <span className="text-gray-600">Next.js 15</span>
+            </div>
+            <div>
+              <strong className="block text-gray-900">Database</strong>
+              <span className="text-gray-600">Neon Postgres</span>
+            </div>
+            <div>
+              <strong className="block text-gray-900">ORM</strong>
+              <span className="text-gray-600">Drizzle</span>
+            </div>
+            <div>
+              <strong className="block text-gray-900">AI Model</strong>
+              <span className="text-gray-600">OpenAI GPT-4</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
