@@ -1,7 +1,8 @@
 "use client";
 
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import type { DynamicFormSpec } from "@/lib/validation";
+import { useMemo } from "react";
 
 interface DynamicFormRendererProps {
   spec: DynamicFormSpec;
@@ -14,13 +15,69 @@ export default function DynamicFormRenderer({
   onSubmit,
   initialValues = {}
 }: DynamicFormRendererProps) {
-  const { register, handleSubmit, formState: { isSubmitting } } = useForm({
+  const { register, handleSubmit, formState: { isSubmitting }, control } = useForm({
     defaultValues: initialValues
   });
 
+  // Watch all form values for conditional rendering
+  const watchedValues = useWatch({ control });
+
+  // Check if a field should be shown based on showIf conditions
+  const shouldShowField = (field: any) => {
+    if (!field.showIf) return true;
+    
+    const { showIf } = field;
+    const dependentValue = watchedValues[showIf.field];
+    
+    if (showIf.equals !== undefined) {
+      return dependentValue === showIf.equals;
+    }
+    
+    if (showIf.anyOf) {
+      return showIf.anyOf.includes(dependentValue);
+    }
+    
+    if (showIf.minSelected !== undefined && Array.isArray(dependentValue)) {
+      return dependentValue.length >= showIf.minSelected;
+    }
+    
+    return true;
+  };
+
+  // Process form data to handle multiselect checkboxes
+  const processFormData = (data: Record<string, any>) => {
+    const processed: Record<string, any> = {};
+    
+    for (const [key, value] of Object.entries(data)) {
+      // Check if this is a multiselect field
+      const field = spec.fields.find(f => f.id === key);
+      if (field && (field.type === 'multiselect' || field.type === 'checkbox-group')) {
+        // Convert checkbox object to array of selected values
+        const selected = [];
+        if (typeof value === 'object' && value !== null) {
+          for (const [option, isChecked] of Object.entries(value)) {
+            if (isChecked) selected.push(option);
+          }
+        }
+        processed[key] = selected;
+      } else {
+        processed[key] = value;
+      }
+    }
+    
+    return processed;
+  };
+
+  const handleFormSubmit = handleSubmit((data) => {
+    const processedData = processFormData(data);
+    return onSubmit(processedData);
+  });
+
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <form onSubmit={handleFormSubmit} className="space-y-4">
       {spec.fields.map((field) => {
+        if (!shouldShowField(field)) return null;
+
         switch (field.type) {
           case "text":
             return (
@@ -42,6 +99,30 @@ export default function DynamicFormRenderer({
             );
             
           case "number":
+            return (
+              <div key={field.id} className="space-y-1">
+                <label className="block text-sm font-medium">
+                  {field.label}
+                  {field.required && <span className="text-red-500 ml-1">*</span>}
+                </label>
+                {field.helpText && (
+                  <p className="text-sm text-gray-600">{field.helpText}</p>
+                )}
+                <input
+                  className="w-full rounded border p-2"
+                  {...register(field.id, { 
+                    required: field.required,
+                    min: field.min || field.validations?.min,
+                    max: field.max || field.validations?.max,
+                  })}
+                  type="number"
+                  placeholder={field.placeholder}
+                  min={field.min || field.validations?.min}
+                  max={field.max || field.validations?.max}
+                />
+              </div>
+            );
+
           case "currency":
             return (
               <div key={field.id} className="space-y-1">
@@ -53,22 +134,20 @@ export default function DynamicFormRenderer({
                   <p className="text-sm text-gray-600">{field.helpText}</p>
                 )}
                 <div className="relative">
-                  {field.type === "currency" && (
-                    <span className="absolute left-2 top-2 text-gray-500">$</span>
-                  )}
+                  <span className="absolute left-2 top-2 text-gray-500">
+                    {field.currency === "USD" ? "$" : field.currency || "$"}
+                  </span>
                   <input
-                    className={`w-full rounded border p-2 ${
-                      field.type === "currency" ? "pl-7" : ""
-                    }`}
+                    className="w-full rounded border p-2 pl-7"
                     {...register(field.id, { 
                       required: field.required,
-                      min: field.validations?.min,
-                      max: field.validations?.max,
+                      min: field.min || field.validations?.min,
+                      max: field.max || field.validations?.max,
                     })}
                     type="number"
                     placeholder={field.placeholder}
-                    min={field.validations?.min}
-                    max={field.validations?.max}
+                    min={field.min || field.validations?.min}
+                    max={field.max || field.validations?.max}
                   />
                 </div>
               </div>
@@ -141,7 +220,7 @@ export default function DynamicFormRenderer({
                   <p className="text-sm text-gray-600">{field.helpText}</p>
                 )}
                 <div className="space-y-2">
-                  {field.options.map((option) => (
+                  {field.options?.map((option) => (
                     <label key={option.value} className="flex items-center gap-2">
                       <input
                         type="radio"
@@ -170,7 +249,7 @@ export default function DynamicFormRenderer({
                   {...register(field.id, { required: field.required })}
                 >
                   <option value="">Select...</option>
-                  {field.options.map((option) => (
+                  {field.options?.map((option) => (
                     <option key={option.value} value={option.value}>
                       {option.label}
                     </option>
@@ -179,6 +258,7 @@ export default function DynamicFormRenderer({
               </div>
             );
             
+          case "multiselect":
           case "checkbox-group":
             return (
               <fieldset key={field.id} className="space-y-2">
@@ -190,7 +270,7 @@ export default function DynamicFormRenderer({
                   <p className="text-sm text-gray-600">{field.helpText}</p>
                 )}
                 <div className="space-y-2">
-                  {field.options.map((option) => (
+                  {field.options?.map((option) => (
                     <label key={option.value} className="flex items-center gap-2">
                       <input
                         type="checkbox"
@@ -205,7 +285,13 @@ export default function DynamicFormRenderer({
             );
             
           default:
-            return null;
+            return (
+              <div key={field.id} className="p-4 bg-gray-50 rounded">
+                <p className="text-sm text-gray-600">
+                  Unsupported field type: {field.type}
+                </p>
+              </div>
+            );
         }
       })}
       

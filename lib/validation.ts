@@ -37,39 +37,47 @@ export const CoreZ = z.object({
 
 export type Core = z.infer<typeof CoreZ>;
 
+// Flexible validation schema that accepts various field formats
 export const DynamicSpecZ = z.object({
+  formId: z.string().optional(), // Optional formId field
   title: z.string(),
   version: z.string(),
   rationale: z.string().optional(),
   warnings: z.array(z.string()).optional(),
-  fields: z.array(z.union([
-    z.object({
-      id: z.string(),
-      type: z.enum(["text", "textarea", "number", "boolean", "date", "currency"]),
-      label: z.string(),
-      helpText: z.string().optional(),
-      required: z.boolean().optional(),
-      placeholder: z.string().optional(),
-      validations: z.object({
-        minLength: z.number().optional(),
-        maxLength: z.number().optional(),
-        min: z.number().optional(),
-        max: z.number().optional(),
-        pattern: z.string().optional(),
-      }).optional(),
-    }),
-    z.object({
-      id: z.string(),
-      type: z.enum(["select", "radio", "checkbox-group"]),
-      label: z.string(),
-      required: z.boolean().optional(),
-      options: z.array(z.object({
-        value: z.string(),
-        label: z.string()
-      })),
-      multiple: z.boolean().optional(),
-    }),
-  ])),
+  fields: z.array(z.object({
+    id: z.string(),
+    type: z.enum([
+      "text", "textarea", "number", "boolean", "date", "currency",
+      "select", "radio", "checkbox-group",
+      "multiselect" // Adding multiselect support
+    ]),
+    label: z.string(),
+    helpText: z.string().optional(),
+    required: z.boolean().optional(),
+    placeholder: z.string().optional(),
+    currency: z.string().optional(), // For currency fields
+    min: z.number().optional(), // Direct min/max on field
+    max: z.number().optional(),
+    minSelected: z.number().optional(), // For multiselect
+    options: z.array(z.object({
+      value: z.string(),
+      label: z.string()
+    })).optional(),
+    multiple: z.boolean().optional(),
+    validations: z.object({
+      minLength: z.number().optional(),
+      maxLength: z.number().optional(),
+      min: z.number().optional(),
+      max: z.number().optional(),
+      pattern: z.string().optional(),
+    }).optional(),
+    showIf: z.object({
+      field: z.string(),
+      equals: z.any().optional(),
+      anyOf: z.array(z.string()).optional(),
+      minSelected: z.number().optional(),
+    }).optional(), // Conditional display support
+  })),
 });
 
 export type DynamicFormSpec = z.infer<typeof DynamicSpecZ>;

@@ -5,7 +5,7 @@ import type { DynamicFormSpec } from "@/lib/validation";
 import { generateDynamicSpec } from "@/app/actions";
 import DynamicFormRenderer from "@/components/DynamicFormRenderer";
 import { useRouter } from "next/navigation";
-import { saveToLocalStorage, getFromLocalStorage } from "@/lib/localStorage";
+import { saveToLocalStorage, getFromLocalStorage, type ApplicationData } from "@/lib/localStorage";
 
 export default function DynamicStep() {
   const router = useRouter();
@@ -14,16 +14,20 @@ export default function DynamicStep() {
   );
   const [spec, setSpec] = useState<DynamicFormSpec | null>(null);
   const [existingAnswers, setExistingAnswers] = useState<Record<string, unknown> | null>(null);
+  const [rawModelResponse, setRawModelResponse] = useState<any>(null);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [showJsonView, setShowJsonView] = useState(false);
   const [finalJson, setFinalJson] = useState<any>(null);
+  const [coreOverview, setCoreOverview] = useState<ApplicationData | null>(null);
+  const [debugInfo, setDebugInfo] = useState<any>(null);
 
   useEffect(() => {
     const data = getFromLocalStorage();
     if (data.prompt) setPrompt(data.prompt);
     if (data.dynamicSpec) setSpec(data.dynamicSpec);
     if (data.dynamicAnswers) setExistingAnswers(data.dynamicAnswers);
+    setCoreOverview(data);
   }, []);
 
   const handleGenerateSpec = () => {
@@ -33,9 +37,13 @@ export default function DynamicStep() {
         saveToLocalStorage({ prompt });
         
         const coreData = getFromLocalStorage();
-        const generatedSpec = await generateDynamicSpec(coreData, prompt, 8);
-        setSpec(generatedSpec);
-        saveToLocalStorage({ dynamicSpec: generatedSpec });
+        const { raw, spec, debug } = await generateDynamicSpec(coreData, prompt, 8);
+        setRawModelResponse(raw);
+        setDebugInfo(debug);
+        setSpec(spec);
+        if (spec) {
+          saveToLocalStorage({ dynamicSpec: spec });
+        }
       } catch (err) {
         setError("Failed to generate questions. Please try again.");
         console.error(err);
@@ -74,6 +82,146 @@ export default function DynamicStep() {
         </p>
       </div>
 
+      {coreOverview && (
+        <details open className="bg-white border rounded-lg shadow-sm">
+          <summary className="cursor-pointer select-none px-4 py-3 text-sm font-semibold">
+            Current Application Overview
+          </summary>
+          <div className="px-4 pb-4 pt-2 space-y-6">
+            {/* Applicant */}
+            {coreOverview.applicant && (
+              <section className="space-y-2">
+                <h3 className="text-sm font-semibold text-gray-700">Applicant</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <span className="font-medium">Name:</span>
+                    <span className="ml-1">
+                      {coreOverview.applicant.firstName} {coreOverview.applicant.lastName}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="font-medium">DOB:</span>
+                    <span className="ml-1">{coreOverview.applicant.dob}</span>
+                  </div>
+                  <div>
+                    <span className="font-medium">Phone:</span>
+                    <span className="ml-1">{coreOverview.applicant.phone}</span>
+                  </div>
+                  <div>
+                    <span className="font-medium">Email:</span>
+                    <span className="ml-1">{coreOverview.applicant.email}</span>
+                  </div>
+                  {coreOverview.applicant.language && (
+                    <div>
+                      <span className="font-medium">Language:</span>
+                      <span className="ml-1">{coreOverview.applicant.language}</span>
+                    </div>
+                  )}
+                </div>
+              </section>
+            )}
+
+            {/* Housing */}
+            {coreOverview.housing && (
+              <section className="space-y-2">
+                <h3 className="text-sm font-semibold text-gray-700">Housing</h3>
+                <div className="text-sm space-y-1">
+                  <div>
+                    <span className="font-medium">Address:</span>
+                    <span className="ml-1">
+                      {coreOverview.housing.address1}
+                      {coreOverview.housing.address2 ? `, ${coreOverview.housing.address2}` : ""}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="font-medium">City, State ZIP:</span>
+                    <span className="ml-1">
+                      {coreOverview.housing.city}, {coreOverview.housing.state} {coreOverview.housing.zip}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div>
+                      <span className="font-medium">Monthly Rent:</span>
+                      <span className="ml-1">${'{'}coreOverview.housing.monthlyRent{'}'}</span>
+                    </div>
+                    <div>
+                      <span className="font-medium">Months Behind:</span>
+                      <span className="ml-1">{coreOverview.housing.monthsBehind}</span>
+                    </div>
+                    <div>
+                      <span className="font-medium">Total Owed:</span>
+                      <span className="ml-1">${'{'}(coreOverview.housing.monthlyRent || 0) * (coreOverview.housing.monthsBehind || 0){'}'}</span>
+                    </div>
+                  </div>
+                  {(coreOverview.housing.landlordName || coreOverview.housing.landlordPhone) && (
+                    <div>
+                      <span className="font-medium">Landlord:</span>
+                      <span className="ml-1">
+                        {coreOverview.housing.landlordName}
+                        {coreOverview.housing.landlordPhone ? ` (${coreOverview.housing.landlordPhone})` : ""}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </section>
+            )}
+
+            {/* Household */}
+            {coreOverview.household && (
+              <section className="space-y-2">
+                <h3 className="text-sm font-semibold text-gray-700">Household</h3>
+                <div className="text-sm">
+                  <div>
+                    <span className="font-medium">Household Size:</span>
+                    <span className="ml-1">{coreOverview.household.size}</span>
+                  </div>
+                  {coreOverview.household.members && coreOverview.household.members.length > 0 && (
+                    <div className="mt-2">
+                      <div className="font-medium mb-1">Members:</div>
+                      <div className="flex flex-wrap gap-2">
+                        {coreOverview.household.members.map((m, idx) => (
+                          <span
+                            key={idx}
+                            className="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs bg-gray-50"
+                          >
+                            <span className="font-medium capitalize">{m.relation}</span>
+                            <span className="text-gray-600">{m.ageRange}</span>
+                            <span className="text-gray-600">{m.incomeBand}</span>
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </section>
+            )}
+
+            {/* Eligibility */}
+            {coreOverview.eligibility && (
+              <section className="space-y-2">
+                <h3 className="text-sm font-semibold text-gray-700">Eligibility</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                  <div>
+                    <span className="font-medium">Hardship:</span>
+                    <span className="ml-1">{coreOverview.eligibility.hardship ? "Yes" : "No"}</span>
+                  </div>
+                  <div>
+                    <span className="font-medium">Signed By:</span>
+                    <span className="ml-1">{coreOverview.eligibility.typedSignature}</span>
+                  </div>
+                  {coreOverview.eligibility.signedAtISO && (
+                    <div>
+                      <span className="font-medium">Signed At:</span>
+                      <span className="ml-1">{new Date(coreOverview.eligibility.signedAtISO).toLocaleString()}</span>
+                    </div>
+                  )}
+                </div>
+              </section>
+            )}
+          </div>
+        </details>
+      )}
+
       {!showJsonView ? (
         <>
           <div className="bg-yellow-50 border border-yellow-200 rounded p-4">
@@ -83,10 +231,10 @@ export default function DynamicStep() {
             </p>
           </div>
 
-          <section className="space-y-2">
-            <label className="block text-sm font-medium">
-              AI Prompt (Editable)
-            </label>
+          <details open className="space-y-2">
+            <summary className="cursor-pointer text-sm font-medium">
+              AI Prompt (click to expand/collapse)
+            </summary>
             <p className="text-sm text-gray-600">
               Customize how the AI generates follow-up questions
             </p>
@@ -104,7 +252,9 @@ export default function DynamicStep() {
             >
               {pending ? "Generating..." : "Generate Questions"}
             </button>
-          </section>
+          </details>
+
+          {/* JSON overview removed in favor of visual, collapsible overview above */}
 
           {error && (
             <div className="bg-red-50 border border-red-200 rounded p-4">
@@ -145,6 +295,28 @@ export default function DynamicStep() {
                 </pre>
               </details>
             </section>
+          )}
+
+          {rawModelResponse && (
+            <details className="mt-2">
+              <summary className="cursor-pointer text-sm text-gray-700 hover:text-gray-900">
+                View raw model response
+              </summary>
+              <pre className="mt-2 text-xs bg-gray-50 p-3 rounded overflow-auto">
+                {JSON.stringify(rawModelResponse, null, 2)}
+              </pre>
+            </details>
+          )}
+
+          {debugInfo && (
+            <details className="mt-2">
+              <summary className="cursor-pointer text-sm text-gray-700 hover:text-gray-900">
+                View model request/response debug
+              </summary>
+              <pre className="mt-2 text-xs bg-gray-50 p-3 rounded overflow-auto">
+                {JSON.stringify(debugInfo, null, 2)}
+              </pre>
+            </details>
           )}
 
           <div className="flex gap-4 pt-4 border-t">

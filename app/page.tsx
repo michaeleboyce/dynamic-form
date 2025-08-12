@@ -21,11 +21,30 @@ export default function Home() {
           </p>
           
           <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
-            <p className="text-sm text-blue-900">
-              <strong>Demo Notice:</strong> This is a demonstration environment. Do not enter real 
-              personal information. The AI will generate follow-up questions based on your responses 
-              to help determine eligibility and required documentation.
-            </p>
+            <div className="text-sm text-blue-900 space-y-2">
+              <p>
+                <strong>Demo Notice:</strong> This is a pretend, demonstration-only application. It is not
+                connected to any real benefits program or production database.
+              </p>
+              <ul className="list-disc list-inside space-y-1">
+                <li>
+                  <strong>Do not enter real personal information</strong> (for example: Social Security numbers,
+                  bank/credit card numbers, driver’s license, full home address, employer details, or any other PII).
+                </li>
+                <li>
+                  Your responses are stored only in your browser’s local storage for this demo and can be cleared at any time.
+                </li>
+                <li>
+                  The AI may generate example follow‑up questions; treat these as illustrative only—this is not guidance or advice.
+                </li>
+                <li>
+                  Use obviously made‑up data when testing (e.g., John Doe, 01/01/1990, 555‑123‑4567).
+                </li>
+              </ul>
+              <p>
+                By continuing, you acknowledge this is a sandbox experience intended for evaluation and usability testing only.
+              </p>
+            </div>
           </div>
 
           <div className="space-y-4 mb-8">
@@ -40,28 +59,7 @@ export default function Home() {
             </ol>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-4 mb-8">
-            <div className="border rounded-lg p-4">
-              <h4 className="font-semibold mb-2">✨ Key Features</h4>
-              <ul className="text-sm text-gray-600 space-y-1">
-                <li>• Editable AI prompts</li>
-                <li>• Real-time question generation</li>
-                <li>• JSON schema validation</li>
-                <li>• Complete data export</li>
-                <li>• Session persistence</li>
-              </ul>
-            </div>
-            <div className="border rounded-lg p-4">
-              <h4 className="font-semibold mb-2">🛡️ Privacy & Security</h4>
-              <ul className="text-sm text-gray-600 space-y-1">
-                <li>• PII filtering built-in</li>
-                <li>• No SSN/bank info collection</li>
-                <li>• Cookie-based sessions</li>
-                <li>• Secure data storage</li>
-                <li>• Demo mode protection</li>
-              </ul>
-            </div>
-          </div>
+          {/* Removed feature and security cards per request */}
 
           <div className="flex gap-4 justify-center">
             <Link
@@ -98,7 +96,7 @@ export default function Home() {
             </div>
             <div>
               <strong className="block text-gray-900">AI Model</strong>
-              <span className="text-gray-600">OpenAI GPT-4</span>
+              <span className="text-gray-600">OpenAI GPT-5</span>
             </div>
           </div>
         </div>
