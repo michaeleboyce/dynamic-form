@@ -3,9 +3,9 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { upsertCore, getApplication } from "@/app/actions";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import { saveToLocalStorage, getFromLocalStorage } from "@/lib/localStorage";
 
 const EligibilitySchema = z.object({
   hardship: z.boolean().refine(val => val === true, {
@@ -16,65 +16,29 @@ const EligibilitySchema = z.object({
 
 export default function EligibilityStep() {
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
-  const [existingData, setExistingData] = useState<any>(null);
   
   const { register, handleSubmit, formState: { errors }, reset } = useForm({
     resolver: zodResolver(EligibilitySchema),
   });
 
   useEffect(() => {
-    async function loadData() {
-      const app = await getApplication();
-      if (app?.core) {
-        setExistingData(app.core);
-        const eligibility = (app.core as any).eligibility;
-        if (eligibility) {
-          reset({
-            hardship: eligibility.hardship,
-            typedSignature: eligibility.typedSignature,
-          });
-        }
-      }
+    const data = getFromLocalStorage();
+    if (data.eligibility) {
+      reset({
+        hardship: data.eligibility.hardship,
+        typedSignature: data.eligibility.typedSignature,
+      });
     }
-    loadData();
   }, [reset]);
 
-  const onSubmit = async (values: any) => {
-    setLoading(true);
-    try {
-      const coreData = {
-        applicant: existingData?.applicant || {
-          firstName: "",
-          lastName: "",
-          dob: "",
-          phone: "",
-          email: "",
-        },
-        housing: existingData?.housing || {
-          address1: "",
-          city: "",
-          state: "",
-          zip: "",
-          monthlyRent: 0,
-          monthsBehind: 0,
-        },
-        household: existingData?.household || {
-          size: 1,
-        },
-        eligibility: {
-          ...values,
-          signedAtISO: new Date().toISOString(),
-        },
-      };
-      
-      await upsertCore(coreData);
-      router.push("/apply/review");
-    } catch (error) {
-      console.error("Error saving eligibility data:", error);
-    } finally {
-      setLoading(false);
-    }
+  const onSubmit = (values: any) => {
+    saveToLocalStorage({ 
+      eligibility: {
+        ...values,
+        signedAtISO: new Date().toISOString(),
+      }
+    });
+    router.push("/apply/review");
   };
 
   return (
@@ -138,14 +102,13 @@ export default function EligibilityStep() {
           onClick={() => router.push("/apply/household")}
           className="px-6 py-2 border rounded hover:bg-gray-50"
         >
-          Back
+          ← Back
         </button>
         <button
           type="submit"
-          disabled={loading}
-          className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
+          className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"
         >
-          {loading ? "Saving..." : "Save & Continue"}
+          Continue →
         </button>
       </div>
     </form>

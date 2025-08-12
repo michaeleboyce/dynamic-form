@@ -1,37 +1,22 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getApplication } from "@/app/actions";
 import { useRouter } from "next/navigation";
-import type { Core } from "@/lib/validation";
+import { getFromLocalStorage, type ApplicationData } from "@/lib/localStorage";
 
 export default function ReviewStep() {
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
-  const [application, setApplication] = useState<any>(null);
+  const [application, setApplication] = useState<ApplicationData | null>(null);
 
   useEffect(() => {
-    async function loadData() {
-      try {
-        const app = await getApplication();
-        setApplication(app);
-      } catch (error) {
-        console.error("Error loading application:", error);
-      } finally {
-        setLoading(false);
-      }
-    }
-    loadData();
+    const data = getFromLocalStorage();
+    setApplication(data);
   }, []);
 
-  if (loading) {
-    return <div className="p-8 text-center">Loading application data...</div>;
-  }
-
-  if (!application?.core) {
+  if (!application?.applicant || !application?.housing || !application?.household || !application?.eligibility) {
     return (
       <div className="p-8 text-center">
-        <p className="mb-4">No application data found. Please start from the beginning.</p>
+        <p className="mb-4">Please complete all previous sections before reviewing.</p>
         <button
           onClick={() => router.push("/apply")}
           className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"
@@ -42,10 +27,14 @@ export default function ReviewStep() {
     );
   }
 
-  const core = application.core as Core;
-
   return (
     <div className="space-y-6">
+      <div className="bg-amber-50 border border-amber-200 rounded p-4">
+        <p className="text-sm text-amber-900">
+          <strong>Demo Mode:</strong> This data is stored locally only. No database connection is used.
+        </p>
+      </div>
+
       <h2 className="text-2xl font-semibold">Review Your Application</h2>
       
       <div className="bg-blue-50 border border-blue-200 rounded p-4">
@@ -60,20 +49,20 @@ export default function ReviewStep() {
         </div>
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
-            <span className="font-medium">Name:</span> {core.applicant.firstName} {core.applicant.lastName}
+            <span className="font-medium">Name:</span> {application.applicant.firstName} {application.applicant.lastName}
           </div>
           <div>
-            <span className="font-medium">Date of Birth:</span> {core.applicant.dob}
+            <span className="font-medium">Date of Birth:</span> {application.applicant.dob}
           </div>
           <div>
-            <span className="font-medium">Phone:</span> {core.applicant.phone}
+            <span className="font-medium">Phone:</span> {application.applicant.phone}
           </div>
           <div>
-            <span className="font-medium">Email:</span> {core.applicant.email}
+            <span className="font-medium">Email:</span> {application.applicant.email}
           </div>
-          {core.applicant.language && (
+          {application.applicant.language && (
             <div>
-              <span className="font-medium">Language:</span> {core.applicant.language}
+              <span className="font-medium">Language:</span> {application.applicant.language}
             </div>
           )}
         </div>
@@ -85,27 +74,27 @@ export default function ReviewStep() {
         </div>
         <div className="grid grid-cols-1 gap-4 text-sm">
           <div>
-            <span className="font-medium">Address:</span> {core.housing.address1}
-            {core.housing.address2 && `, ${core.housing.address2}`}
+            <span className="font-medium">Address:</span> {application.housing.address1}
+            {application.housing.address2 && `, ${application.housing.address2}`}
           </div>
           <div>
-            <span className="font-medium">City, State ZIP:</span> {core.housing.city}, {core.housing.state} {core.housing.zip}
+            <span className="font-medium">City, State ZIP:</span> {application.housing.city}, {application.housing.state} {application.housing.zip}
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <span className="font-medium">Monthly Rent:</span> ${core.housing.monthlyRent}
+              <span className="font-medium">Monthly Rent:</span> ${application.housing.monthlyRent}
             </div>
             <div>
-              <span className="font-medium">Months Behind:</span> {core.housing.monthsBehind}
+              <span className="font-medium">Months Behind:</span> {application.housing.monthsBehind}
             </div>
           </div>
           <div>
-            <span className="font-medium">Total Owed:</span> ${core.housing.monthlyRent * core.housing.monthsBehind}
+            <span className="font-medium">Total Owed:</span> ${application.housing.monthlyRent * application.housing.monthsBehind}
           </div>
-          {core.housing.landlordName && (
+          {application.housing.landlordName && (
             <div>
-              <span className="font-medium">Landlord:</span> {core.housing.landlordName}
-              {core.housing.landlordPhone && ` (${core.housing.landlordPhone})`}
+              <span className="font-medium">Landlord:</span> {application.housing.landlordName}
+              {application.housing.landlordPhone && ` (${application.housing.landlordPhone})`}
             </div>
           )}
         </div>
@@ -117,13 +106,13 @@ export default function ReviewStep() {
         </div>
         <div className="text-sm">
           <div>
-            <span className="font-medium">Household Size:</span> {core.household.size}
+            <span className="font-medium">Household Size:</span> {application.household.size}
           </div>
-          {core.household.members && core.household.members.length > 0 && (
+          {application.household.members && application.household.members.length > 0 && (
             <div className="mt-3">
               <span className="font-medium">Household Members:</span>
               <ul className="mt-2 space-y-1 ml-4">
-                {core.household.members.map((member, idx) => (
+                {application.household.members.map((member, idx) => (
                   <li key={idx}>
                     • {member.relation} ({member.ageRange}, Income: {member.incomeBand})
                   </li>
@@ -141,14 +130,14 @@ export default function ReviewStep() {
         <div className="text-sm">
           <div>
             <span className="font-medium">COVID-19 Hardship Acknowledged:</span>{" "}
-            {core.eligibility.hardship ? "Yes" : "No"}
+            {application.eligibility.hardship ? "Yes" : "No"}
           </div>
           <div>
-            <span className="font-medium">Signed By:</span> {core.eligibility.typedSignature}
+            <span className="font-medium">Signed By:</span> {application.eligibility.typedSignature}
           </div>
           <div>
             <span className="font-medium">Signed At:</span>{" "}
-            {new Date(core.eligibility.signedAtISO).toLocaleString()}
+            {new Date(application.eligibility.signedAtISO).toLocaleString()}
           </div>
         </div>
       </section>
@@ -158,13 +147,13 @@ export default function ReviewStep() {
           onClick={() => router.push("/apply/eligibility")}
           className="px-6 py-2 border rounded hover:bg-gray-50"
         >
-          Back to Edit
+          ← Back to Edit
         </button>
         <button
           onClick={() => router.push("/apply/dynamic")}
           className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"
         >
-          Continue to Dynamic Questions
+          Continue to Dynamic Questions →
         </button>
       </div>
     </div>

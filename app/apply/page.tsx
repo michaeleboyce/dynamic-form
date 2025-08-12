@@ -3,9 +3,9 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { upsertCore, getApplication } from "@/app/actions";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import { saveToLocalStorage, getFromLocalStorage } from "@/lib/localStorage";
 
 const ApplicantSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
@@ -18,58 +18,32 @@ const ApplicantSchema = z.object({
 
 export default function ApplicantStep() {
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
-  const [existingData, setExistingData] = useState<any>(null);
   
   const { register, handleSubmit, formState: { errors }, reset } = useForm({
     resolver: zodResolver(ApplicantSchema),
   });
 
   useEffect(() => {
-    async function loadData() {
-      const app = await getApplication();
-      if (app?.core) {
-        setExistingData(app.core);
-        reset((app.core as any).applicant || {});
-      }
+    const data = getFromLocalStorage();
+    if (data.applicant) {
+      reset(data.applicant);
     }
-    loadData();
   }, [reset]);
 
-  const onSubmit = async (values: any) => {
-    setLoading(true);
-    try {
-      const coreData = {
-        applicant: values,
-        housing: existingData?.housing || {
-          address1: "",
-          city: "",
-          state: "",
-          zip: "",
-          monthlyRent: 0,
-          monthsBehind: 0,
-        },
-        household: existingData?.household || {
-          size: 1,
-        },
-        eligibility: existingData?.eligibility || {
-          hardship: false,
-          typedSignature: "",
-          signedAtISO: "",
-        },
-      };
-      
-      await upsertCore(coreData);
-      router.push("/apply/housing");
-    } catch (error) {
-      console.error("Error saving applicant data:", error);
-    } finally {
-      setLoading(false);
-    }
+  const onSubmit = (values: any) => {
+    saveToLocalStorage({ applicant: values });
+    router.push("/apply/housing");
   };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      <div className="bg-amber-50 border border-amber-200 rounded p-4 mb-6">
+        <p className="text-sm text-amber-900">
+          <strong>Demo Mode:</strong> This data is stored locally in your browser only. 
+          No data is saved to a database. Please do not enter real personal information.
+        </p>
+      </div>
+
       <h2 className="text-2xl font-semibold">Applicant Information</h2>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -149,10 +123,9 @@ export default function ApplicantStep() {
       
       <button
         type="submit"
-        disabled={loading}
-        className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
+        className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"
       >
-        {loading ? "Saving..." : "Save & Continue"}
+        Continue →
       </button>
     </form>
   );

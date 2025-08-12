@@ -3,9 +3,9 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { upsertCore, getApplication } from "@/app/actions";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { saveToLocalStorage, getFromLocalStorage } from "@/lib/localStorage";
 
 const HouseholdSchema = z.object({
   size: z.coerce.number().min(1, "Household size must be at least 1"),
@@ -18,8 +18,6 @@ const HouseholdSchema = z.object({
 
 export default function HouseholdStep() {
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
-  const [existingData, setExistingData] = useState<any>(null);
   const [memberCount, setMemberCount] = useState(1);
   
   const { register, handleSubmit, formState: { errors }, reset, watch } = useForm({
@@ -29,18 +27,11 @@ export default function HouseholdStep() {
   const size = watch("size");
 
   useEffect(() => {
-    async function loadData() {
-      const app = await getApplication();
-      if (app?.core) {
-        setExistingData(app.core);
-        const household = (app.core as any).household;
-        if (household) {
-          reset(household);
-          setMemberCount(household.size || 1);
-        }
-      }
+    const data = getFromLocalStorage();
+    if (data.household) {
+      reset(data.household);
+      setMemberCount(data.household.size || 1);
     }
-    loadData();
   }, [reset]);
 
   useEffect(() => {
@@ -49,40 +40,9 @@ export default function HouseholdStep() {
     }
   }, [size]);
 
-  const onSubmit = async (values: any) => {
-    setLoading(true);
-    try {
-      const coreData = {
-        applicant: existingData?.applicant || {
-          firstName: "",
-          lastName: "",
-          dob: "",
-          phone: "",
-          email: "",
-        },
-        housing: existingData?.housing || {
-          address1: "",
-          city: "",
-          state: "",
-          zip: "",
-          monthlyRent: 0,
-          monthsBehind: 0,
-        },
-        household: values,
-        eligibility: existingData?.eligibility || {
-          hardship: false,
-          typedSignature: "",
-          signedAtISO: "",
-        },
-      };
-      
-      await upsertCore(coreData);
-      router.push("/apply/eligibility");
-    } catch (error) {
-      console.error("Error saving household data:", error);
-    } finally {
-      setLoading(false);
-    }
+  const onSubmit = (values: any) => {
+    saveToLocalStorage({ household: values });
+    router.push("/apply/eligibility");
   };
 
   return (
@@ -181,14 +141,13 @@ export default function HouseholdStep() {
           onClick={() => router.push("/apply/housing")}
           className="px-6 py-2 border rounded hover:bg-gray-50"
         >
-          Back
+          ← Back
         </button>
         <button
           type="submit"
-          disabled={loading}
-          className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
+          className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"
         >
-          {loading ? "Saving..." : "Save & Continue"}
+          Continue →
         </button>
       </div>
     </form>

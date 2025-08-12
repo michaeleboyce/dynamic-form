@@ -1,9 +1,6 @@
 "use server";
 
-import { db, schema } from "@/db";
-import { eq } from "drizzle-orm";
-import { CoreZ, DynamicSpecZ, type DynamicFormSpec } from "@/lib/validation";
-import { getSessionId } from "@/lib/session";
+import { DynamicSpecZ, type DynamicFormSpec } from "@/lib/validation";
 import OpenAI from "openai";
 
 const disallowed = [/ssn/i, /social\s*security/i, /bank/i, /routing/i];
@@ -13,88 +10,15 @@ const filterSpec = (spec: DynamicFormSpec): DynamicFormSpec => ({
   fields: spec.fields.filter(f => !disallowed.some(rx => rx.test((f as any).label)))
 });
 
-export async function upsertCore(core: unknown) {
-  const sessionId = await getSessionId();
-  const parsed = CoreZ.parse(core);
-  
-  const existing = await db
-    .select()
-    .from(schema.applications)
-    .where(eq(schema.applications.sessionId, sessionId))
-    .limit(1);
-    
-  if (existing.length) {
-    await db
-      .update(schema.applications)
-      .set({ core: parsed, updatedAt: new Date() })
-      .where(eq(schema.applications.sessionId, sessionId));
-    return existing[0].id;
-  }
-  
-  const [row] = await db
-    .insert(schema.applications)
-    .values({ sessionId, core: parsed })
-    .returning({ id: schema.applications.id });
-  return row.id;
-}
-
-export async function savePrompt(prompt: string) {
-  const sessionId = await getSessionId();
-  await db
-    .update(schema.applications)
-    .set({ prompt, updatedAt: new Date() })
-    .where(eq(schema.applications.sessionId, sessionId));
-}
-
-export async function generateDynamicSpec(maxFields = 8) {
-  const sessionId = await getSessionId();
-  const [app] = await db
-    .select()
-    .from(schema.applications)
-    .where(eq(schema.applications.sessionId, sessionId))
-    .limit(1);
-    
-  if (!app) throw new Error("No application found");
-
+export async function generateDynamicSpec(coreData: any, prompt: string, maxFields = 8) {
   const system = `Return ONLY JSON matching DynamicFormSpec. No file uploads. Prefer structured fields. Max ${maxFields} fields. Avoid PII (SSN, bank). 8th-grade reading level.`;
-  const user = app.prompt ?? `You are assisting a rental assistance screener. Propose up to ${maxFields} targeted follow-ups that affect eligibility or award amount. Prefer structured fields. Avoid duplicates.`;
-  const context = JSON.stringify({ core: app.core });
+  const user = prompt ?? `You are assisting a rental assistance screener. Propose up to ${maxFields} targeted follow-ups that affect eligibility or award amount. Prefer structured fields. Avoid duplicates.`;
+  const context = JSON.stringify({ core: coreData });
 
   const specJson = await callModelReturningJson({ system, user, context });
   const parsed = DynamicSpecZ.parse(filterSpec(specJson));
-
-  await db
-    .update(schema.applications)
-    .set({ dynamicSpec: parsed, updatedAt: new Date() })
-    .where(eq(schema.applications.sessionId, sessionId));
-    
+  
   return parsed;
-}
-
-export async function saveDynamicAnswers(answers: Record<string, unknown>) {
-  const sessionId = await getSessionId();
-  await db
-    .update(schema.applications)
-    .set({ dynamicAnswers: answers, updatedAt: new Date() })
-    .where(eq(schema.applications.sessionId, sessionId));
-}
-
-export async function submitApplication() {
-  const sessionId = await getSessionId();
-  await db
-    .update(schema.applications)
-    .set({ status: "submitted", updatedAt: new Date() })
-    .where(eq(schema.applications.sessionId, sessionId));
-}
-
-export async function getApplication() {
-  const sessionId = await getSessionId();
-  const [app] = await db
-    .select()
-    .from(schema.applications)
-    .where(eq(schema.applications.sessionId, sessionId))
-    .limit(1);
-  return app;
 }
 
 async function callModelReturningJson({ 

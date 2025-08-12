@@ -2,9 +2,10 @@
 
 import { useState, useTransition, useEffect } from "react";
 import type { DynamicFormSpec } from "@/lib/validation";
-import { savePrompt, generateDynamicSpec, saveDynamicAnswers, getApplication } from "@/app/actions";
+import { generateDynamicSpec } from "@/app/actions";
 import DynamicFormRenderer from "@/components/DynamicFormRenderer";
 import { useRouter } from "next/navigation";
+import { saveToLocalStorage, getFromLocalStorage } from "@/lib/localStorage";
 
 export default function DynamicStep() {
   const router = useRouter();
@@ -19,23 +20,22 @@ export default function DynamicStep() {
   const [finalJson, setFinalJson] = useState<any>(null);
 
   useEffect(() => {
-    async function loadData() {
-      const app = await getApplication();
-      if (app) {
-        if (app.prompt) setPrompt(app.prompt);
-        if (app.dynamicSpec) setSpec(app.dynamicSpec as DynamicFormSpec);
-        if (app.dynamicAnswers) setExistingAnswers(app.dynamicAnswers as Record<string, unknown>);
-      }
-    }
-    loadData();
+    const data = getFromLocalStorage();
+    if (data.prompt) setPrompt(data.prompt);
+    if (data.dynamicSpec) setSpec(data.dynamicSpec);
+    if (data.dynamicAnswers) setExistingAnswers(data.dynamicAnswers);
   }, []);
 
   const handleGenerateSpec = () => {
     startTransition(async () => {
       try {
         setError(null);
-        const generatedSpec = await generateDynamicSpec(8);
+        saveToLocalStorage({ prompt });
+        
+        const coreData = getFromLocalStorage();
+        const generatedSpec = await generateDynamicSpec(coreData, prompt, 8);
         setSpec(generatedSpec);
+        saveToLocalStorage({ dynamicSpec: generatedSpec });
       } catch (err) {
         setError("Failed to generate questions. Please try again.");
         console.error(err);
@@ -43,40 +43,42 @@ export default function DynamicStep() {
     });
   };
 
-  const handleSaveAnswers = async (answers: Record<string, unknown>) => {
-    try {
-      await saveDynamicAnswers(answers);
-      
-      // Get the complete application data for the final JSON view
-      const app = await getApplication();
-      if (app) {
-        const completeForm = {
-          core: app.core,
-          dynamicQuestions: spec,
-          dynamicAnswers: answers,
-          metadata: {
-            sessionId: app.sessionId,
-            status: app.status,
-            createdAt: app.createdAt,
-            updatedAt: app.updatedAt,
-          }
-        };
-        setFinalJson(completeForm);
-        setShowJsonView(true);
+  const handleSaveAnswers = (answers: Record<string, unknown>) => {
+    saveToLocalStorage({ dynamicAnswers: answers });
+    
+    // Get the complete application data for the final JSON view
+    const completeData = getFromLocalStorage();
+    const completeForm = {
+      core: {
+        applicant: completeData.applicant,
+        housing: completeData.housing,
+        household: completeData.household,
+        eligibility: completeData.eligibility,
+      },
+      dynamicQuestions: spec,
+      dynamicAnswers: answers,
+      metadata: {
+        prompt: completeData.prompt,
+        generatedAt: new Date().toISOString(),
       }
-    } catch (err) {
-      setError("Failed to save answers. Please try again.");
-      console.error(err);
-    }
+    };
+    setFinalJson(completeForm);
+    setShowJsonView(true);
   };
 
   return (
     <div className="space-y-6">
+      <div className="bg-amber-50 border border-amber-200 rounded p-4">
+        <p className="text-sm text-amber-900">
+          <strong>Demo Mode:</strong> No data is saved to database. Your form data is stored locally in browser only.
+        </p>
+      </div>
+
       {!showJsonView ? (
         <>
           <div className="bg-yellow-50 border border-yellow-200 rounded p-4">
             <p className="text-sm text-gray-700">
-              <strong>Demo Mode:</strong> This section generates AI-powered follow-up questions based on your previous answers. 
+              This section generates AI-powered follow-up questions based on your previous answers. 
               Do not enter sensitive information.
             </p>
           </div>
@@ -93,7 +95,7 @@ export default function DynamicStep() {
               rows={6}
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
-              onBlur={() => startTransition(() => savePrompt(prompt))}
+              onBlur={() => saveToLocalStorage({ prompt })}
             />
             <button
               className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
@@ -151,14 +153,14 @@ export default function DynamicStep() {
               onClick={() => router.push("/apply/review")}
               className="px-6 py-2 border rounded hover:bg-gray-50"
             >
-              Back
+              ← Back
             </button>
             {spec && existingAnswers && (
               <button
                 onClick={() => router.push("/apply/submit")}
                 className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700"
               >
-                Continue to Submit
+                Continue to Submit →
               </button>
             )}
           </div>
@@ -168,7 +170,7 @@ export default function DynamicStep() {
           <div className="bg-green-50 border border-green-200 rounded p-4">
             <h3 className="font-semibold text-green-900 mb-2">✓ Dynamic Answers Saved</h3>
             <p className="text-sm text-green-700">
-              Your answers have been saved. Below is the complete JSON output of your application.
+              Your answers have been saved locally. Below is the complete JSON output of your application.
             </p>
           </div>
 
@@ -196,13 +198,13 @@ export default function DynamicStep() {
               onClick={() => setShowJsonView(false)}
               className="px-6 py-2 border rounded hover:bg-gray-50"
             >
-              Back to Form
+              ← Back to Form
             </button>
             <button
               onClick={() => router.push("/apply/submit")}
               className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700"
             >
-              Continue to Submit
+              Continue to Submit →
             </button>
           </div>
         </div>

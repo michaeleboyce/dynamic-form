@@ -3,9 +3,9 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { upsertCore, getApplication } from "@/app/actions";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import { saveToLocalStorage, getFromLocalStorage } from "@/lib/localStorage";
 
 const HousingSchema = z.object({
   address1: z.string().min(1, "Address is required"),
@@ -21,53 +21,21 @@ const HousingSchema = z.object({
 
 export default function HousingStep() {
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
-  const [existingData, setExistingData] = useState<any>(null);
   
   const { register, handleSubmit, formState: { errors }, reset } = useForm({
     resolver: zodResolver(HousingSchema),
   });
 
   useEffect(() => {
-    async function loadData() {
-      const app = await getApplication();
-      if (app?.core) {
-        setExistingData(app.core);
-        reset((app.core as any).housing || {});
-      }
+    const data = getFromLocalStorage();
+    if (data.housing) {
+      reset(data.housing);
     }
-    loadData();
   }, [reset]);
 
-  const onSubmit = async (values: any) => {
-    setLoading(true);
-    try {
-      const coreData = {
-        applicant: existingData?.applicant || {
-          firstName: "",
-          lastName: "",
-          dob: "",
-          phone: "",
-          email: "",
-        },
-        housing: values,
-        household: existingData?.household || {
-          size: 1,
-        },
-        eligibility: existingData?.eligibility || {
-          hardship: false,
-          typedSignature: "",
-          signedAtISO: "",
-        },
-      };
-      
-      await upsertCore(coreData);
-      router.push("/apply/household");
-    } catch (error) {
-      console.error("Error saving housing data:", error);
-    } finally {
-      setLoading(false);
-    }
+  const onSubmit = (values: any) => {
+    saveToLocalStorage({ housing: values });
+    router.push("/apply/household");
   };
 
   return (
@@ -185,14 +153,13 @@ export default function HousingStep() {
           onClick={() => router.push("/apply")}
           className="px-6 py-2 border rounded hover:bg-gray-50"
         >
-          Back
+          ← Back
         </button>
         <button
           type="submit"
-          disabled={loading}
-          className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
+          className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"
         >
-          {loading ? "Saving..." : "Save & Continue"}
+          Continue →
         </button>
       </div>
     </form>
