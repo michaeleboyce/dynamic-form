@@ -6,7 +6,7 @@ import { getFromLocalStorage, clearLocalStorage } from "@/lib/localStorage";
 
 export default function SubmitStep() {
   const router = useRouter();
-  const [application, setApplication] = useState<any>(null);
+  const [application, setApplication] = useState<ReturnType<typeof getFromLocalStorage> | null>(null);
 
   useEffect(() => {
     const data = getFromLocalStorage();
@@ -73,7 +73,7 @@ export default function SubmitStep() {
           <li>Is stored locally in your browser only (localStorage)</li>
           <li>Has NOT been saved to any database</li>
           <li>Will be cleared when you start a new application</li>
-          <li>Can be exported using the "Copy JSON" button below</li>
+          <li>Can be exported using the &quot;Copy JSON&quot; button below</li>
         </ul>
       </div>
 

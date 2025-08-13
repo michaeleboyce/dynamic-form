@@ -2,7 +2,6 @@
 
 import { useForm, useWatch } from "react-hook-form";
 import type { DynamicFormSpec } from "@/lib/validation";
-import { useMemo } from "react";
 
 interface DynamicFormRendererProps {
   spec: DynamicFormSpec;
@@ -23,7 +22,7 @@ export default function DynamicFormRenderer({
   const watchedValues = useWatch({ control });
 
   // Check if a field should be shown based on showIf or visibleWhen conditions
-  const shouldShowField = (field: any) => {
+  const shouldShowField = (field: DynamicFormSpec['fields'][number]) => {
     // Support both showIf and visibleWhen
     const condition = field.showIf || field.visibleWhen;
     if (!condition) return true;
@@ -34,7 +33,7 @@ export default function DynamicFormRenderer({
       return dependentValue === condition.equals;
     }
     
-    if (condition.anyOf) {
+    if (condition.anyOf && typeof dependentValue === 'string') {
       return condition.anyOf.includes(dependentValue);
     }
     
@@ -51,17 +50,17 @@ export default function DynamicFormRenderer({
   };
 
   // Process form data to handle multiselect checkboxes
-  const processFormData = (data: Record<string, any>) => {
-    const processed: Record<string, any> = {};
+  const processFormData = (data: Record<string, unknown>) => {
+    const processed: Record<string, unknown> = {};
     
     for (const [key, value] of Object.entries(data)) {
       // Check if this is a multiselect field
       const field = spec.fields.find(f => f.id === key);
       if (field && (field.type === 'multiselect' || field.type === 'multi_select' || field.type === 'checkbox-group')) {
         // Convert checkbox object to array of selected values
-        const selected = [];
-        if (typeof value === 'object' && value !== null) {
-          for (const [option, isChecked] of Object.entries(value)) {
+        const selected: string[] = [];
+        if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+          for (const [option, isChecked] of Object.entries(value as Record<string, unknown>)) {
             if (isChecked) selected.push(option);
           }
         }
@@ -335,9 +334,9 @@ export default function DynamicFormRenderer({
       <button
         type="submit"
         disabled={isSubmitting}
-        className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
+        className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 disabled:opacity-50"
       >
-        {isSubmitting ? "Saving..." : "Save Answers"}
+        {isSubmitting ? "Continuing..." : "Continue to Submit →"}
       </button>
     </form>
   );

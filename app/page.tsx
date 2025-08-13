@@ -84,19 +84,19 @@ export default function Home() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
             <div>
               <strong className="block text-gray-900">Frontend</strong>
-              <span className="text-gray-600">Next.js 15</span>
+              <span className="text-gray-700">Next.js 15</span>
             </div>
             <div>
               <strong className="block text-gray-900">Database</strong>
-              <span className="text-gray-600">Neon Postgres</span>
+              <span className="text-gray-700">Neon Postgres</span>
             </div>
             <div>
               <strong className="block text-gray-900">ORM</strong>
-              <span className="text-gray-600">Drizzle</span>
+              <span className="text-gray-700">Drizzle</span>
             </div>
             <div>
               <strong className="block text-gray-900">AI Model</strong>
-              <span className="text-gray-600">OpenAI GPT-5</span>
+              <span className="text-gray-700">OpenAI GPT-5</span>
             </div>
           </div>
         </div>

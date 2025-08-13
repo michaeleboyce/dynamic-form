@@ -40,7 +40,7 @@ export default function HouseholdStep() {
     }
   }, [size]);
 
-  const onSubmit = (values: any) => {
+  const onSubmit = (values: z.infer<typeof HouseholdSchema>) => {
     saveToLocalStorage({ household: values });
     router.push("/apply/eligibility");
   };

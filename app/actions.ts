@@ -7,11 +7,11 @@ const disallowed = [/ssn/i, /social\s*security/i, /bank/i, /routing/i];
 
 const filterSpec = (spec: DynamicFormSpec): DynamicFormSpec => ({
   ...spec,
-  fields: spec.fields.filter((f) => !disallowed.some((rx) => rx.test((f as any).label))),
+  fields: spec.fields.filter((f) => !disallowed.some((rx) => rx.test(f.label))),
 });
 
 export async function generateDynamicSpec(
-  coreData: any,
+  coreData: unknown,
   prompt: string,
   maxFields = 8
 ): Promise<{ raw: unknown; spec: DynamicFormSpec | null; debug?: { request: unknown; response: unknown; content: string } }> {
@@ -72,10 +72,10 @@ async function callModelReturningJson({
   const requestPayload = {
     model: "gpt-5",
     messages: [
-      { role: "system", content: system },
-      { role: "user", content: `${user}\n\nAPPLICANT_CONTEXT:\n${context}` },
+      { role: "system" as const, content: system },
+      { role: "user" as const, content: `${user}\n\nAPPLICANT_CONTEXT:\n${context}` },
     ],
-    response_format: { type: "json_object" },
+    response_format: { type: "json_object" as const },
   };
 
   console.log("[AI REQUEST] /generateDynamicSpec", {
@@ -87,7 +87,7 @@ async function callModelReturningJson({
   });
 
   try {
-    const completion = await openai.chat.completions.create(requestPayload as any);
+    const completion = await openai.chat.completions.create(requestPayload);
 
     const responseText = completion.choices?.[0]?.message?.content ?? "";
 
@@ -114,18 +114,18 @@ async function callModelReturningJson({
           id: completion.id,
           created: completion.created,
           model: completion.model,
-          choicesMeta: completion.choices?.map((c) => ({ index: c.index, finish_reason: (c as any).finish_reason ?? null })),
+          choicesMeta: completion.choices?.map((c) => ({ index: c.index, finish_reason: c.finish_reason ?? null })),
         },
         content: responseText,
       },
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[AI ERROR] /generateDynamicSpec", error);
     return {
       parsed: {},
       debug: {
         request: requestPayload,
-        response: { error: { message: error?.message ?? String(error), code: error?.code ?? null, param: error?.param ?? null } },
+        response: { error: { message: error instanceof Error ? error.message : String(error), code: (error as { code?: string })?.code ?? null, param: (error as { param?: string })?.param ?? null } },
         content: "",
       },
     };

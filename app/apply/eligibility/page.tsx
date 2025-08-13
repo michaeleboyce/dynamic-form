@@ -31,7 +31,7 @@ export default function EligibilityStep() {
     }
   }, [reset]);
 
-  const onSubmit = (values: any) => {
+  const onSubmit = (values: z.infer<typeof EligibilitySchema>) => {
     saveToLocalStorage({ 
       eligibility: {
         ...values,

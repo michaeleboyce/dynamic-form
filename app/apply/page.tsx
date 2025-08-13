@@ -30,7 +30,7 @@ export default function ApplicantStep() {
     }
   }, [reset]);
 
-  const onSubmit = (values: any) => {
+  const onSubmit = (values: z.infer<typeof ApplicantSchema>) => {
     saveToLocalStorage({ applicant: values });
     router.push("/apply/housing");
   };

@@ -1,5 +1,7 @@
 "use client";
 
+import type { DynamicFormSpec } from "@/lib/validation";
+
 export interface ApplicationData {
   applicant?: {
     firstName: string;
@@ -34,7 +36,7 @@ export interface ApplicationData {
     signedAtISO: string;
   };
   prompt?: string;
-  dynamicSpec?: any;
+  dynamicSpec?: DynamicFormSpec;
   dynamicAnswers?: Record<string, unknown>;
 }
 

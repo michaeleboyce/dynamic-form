@@ -33,7 +33,7 @@ export default function HousingStep() {
     }
   }, [reset]);
 
-  const onSubmit = (values: any) => {
+  const onSubmit = (values: z.infer<typeof HousingSchema>) => {
     saveToLocalStorage({ housing: values });
     router.push("/apply/household");
   };
