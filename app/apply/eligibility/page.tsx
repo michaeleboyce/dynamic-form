@@ -38,7 +38,7 @@ export default function EligibilityStep() {
         signedAtISO: new Date().toISOString(),
       }
     });
-    router.push("/apply/review");
+    router.push("/apply/dynamic");
   };
 
   return (

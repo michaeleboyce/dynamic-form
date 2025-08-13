@@ -17,9 +17,8 @@ export default function ApplyLayout({
     { num: 2, name: "Housing", path: "/apply/housing" },
     { num: 3, name: "Household", path: "/apply/household" },
     { num: 4, name: "Eligibility", path: "/apply/eligibility" },
-    { num: 5, name: "Review", path: "/apply/review" },
-    { num: 6, name: "Dynamic", path: "/apply/dynamic" },
-    { num: 7, name: "Submit", path: "/apply/submit" },
+    { num: 5, name: "Dynamic Questions", path: "/apply/dynamic" },
+    { num: 6, name: "Submit", path: "/apply/submit" },
   ];
 
   const handleClearForm = () => {

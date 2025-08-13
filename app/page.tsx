@@ -8,7 +8,7 @@ export default function Home() {
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
             Emergency Rental Assistance
           </h1>
-          <p className="text-xl text-gray-600">
+          <p className="text-xl text-gray-800">
             AI-Powered Dynamic Forms Demo
           </p>
         </div>

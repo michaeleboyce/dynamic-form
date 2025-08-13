@@ -10,7 +10,7 @@ import { saveToLocalStorage, getFromLocalStorage, type ApplicationData } from "@
 export default function DynamicStep() {
   const router = useRouter();
   const [prompt, setPrompt] = useState(
-    "You are assisting a rental assistance screener. Propose up to 8 targeted follow-ups that affect eligibility or award amount. Focus on eviction status, utility arrears, priority populations, and documentation needs. Prefer structured fields over free text."
+    "You are assisting a rental assistance screener. Propose up to 6 targeted follow-ups that affect eligibility or award amount based on the applicant's information. Focus on eviction status, utility arrears, priority populations, and documentation needs. Prefer structured fields over free text."
   );
   const [spec, setSpec] = useState<DynamicFormSpec | null>(null);
   const [existingAnswers, setExistingAnswers] = useState<Record<string, unknown> | null>(null);
@@ -20,6 +20,7 @@ export default function DynamicStep() {
   const [application, setApplication] = useState<ApplicationData | null>(null);
   const [debugInfo, setDebugInfo] = useState<Record<string, unknown> | null>(null);
   const [isRegenerating, setIsRegenerating] = useState(false);
+  const [generationProgress, setGenerationProgress] = useState(0);
 
   useEffect(() => {
     const data = getFromLocalStorage();
@@ -45,6 +46,27 @@ export default function DynamicStep() {
 
   const handleGenerateSpec = () => {
     setIsRegenerating(true);
+    setGenerationProgress(0);
+    
+    // Progress to 80% over 10 seconds (100 intervals of 100ms each)
+    let intervalCount = 0;
+    const maxIntervals = 100;
+    const targetProgress = 80;
+    
+    const progressInterval = setInterval(() => {
+      intervalCount++;
+      
+      if (intervalCount >= maxIntervals) {
+        clearInterval(progressInterval);
+        setGenerationProgress(targetProgress);
+        return;
+      }
+      
+      // Easing function for smoother progress (starts fast, slows down)
+      const easedProgress = targetProgress * (1 - Math.pow(1 - (intervalCount / maxIntervals), 2));
+      setGenerationProgress(easedProgress);
+    }, 100); // 100ms intervals for 10 seconds total
+    
     startTransition(async () => {
       try {
         setError(null);
@@ -55,18 +77,24 @@ export default function DynamicStep() {
         setRawModelResponse(raw as Record<string, unknown> | null);
         setDebugInfo(debug as Record<string, unknown> | undefined || null);
         
-        // Add a small delay to show the animation
-        await new Promise(resolve => setTimeout(resolve, 300));
+        // Complete the progress
+        clearInterval(progressInterval);
+        setGenerationProgress(100);
+        
+        // Small delay to show completion
+        await new Promise(resolve => setTimeout(resolve, 200));
         
         setSpec(spec);
         if (spec) {
           saveToLocalStorage({ dynamicSpec: spec });
         }
       } catch (err) {
+        clearInterval(progressInterval);
         setError("Failed to generate questions. Please try again.");
         console.error(err);
       } finally {
         setIsRegenerating(false);
+        setGenerationProgress(0);
       }
     });
   };
@@ -222,6 +250,36 @@ export default function DynamicStep() {
         >
           {pending ? "Generating..." : "Generate Questions"}
         </button>
+        
+        {/* Loading Animation */}
+        {isRegenerating && (
+          <div className="mt-4 space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="flex gap-1">
+                <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+              </div>
+              <span className="text-sm text-gray-600">Analyzing your application...</span>
+            </div>
+            
+            <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+              <div 
+                className="bg-blue-600 h-2 rounded-full transition-all duration-300 ease-out"
+                style={{ width: `${generationProgress}%` }}
+              >
+                <div className="h-full bg-white/30 animate-pulse"></div>
+              </div>
+            </div>
+            
+            <div className="text-xs text-gray-500">
+              {generationProgress < 30 && "Reading application data..."}
+              {generationProgress >= 30 && generationProgress < 60 && "Generating contextual questions..."}
+              {generationProgress >= 60 && generationProgress < 90 && "Validating form structure..."}
+              {generationProgress >= 90 && "Finalizing questions..."}
+            </div>
+          </div>
+        )}
       </details>
 
       {error && (
@@ -230,11 +288,12 @@ export default function DynamicStep() {
         </div>
       )}
 
-      {spec && (
+      {spec && !isRegenerating && (
         <section 
-          className={`space-y-4 transition-all duration-500 ${
-            isRegenerating ? 'opacity-0 scale-95' : 'opacity-100 scale-100'
-          }`}
+          className="space-y-4 animate-in fade-in-0 slide-in-from-bottom-4 duration-500"
+          style={{
+            animation: 'fadeInUp 0.5s ease-out'
+          }}
         >
           <div className="border-b pb-2">
             <h2 className="text-xl font-semibold">{spec.title}</h2>
